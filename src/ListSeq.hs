@@ -67,7 +67,7 @@ instance Seq [] where
     
     scanS :: (a -> a -> a) -> a -> [a] -> ([a], a)
     scanS f b [] = ([], b)
-    scanS f b [x] = ([b], x)
+    scanS f b [x] = ([b], f b x)
     scanS f b xs =  let contraccion [] = []
                         contraccion [x] = [x]
                         contraccion (x:y:ys) = 
