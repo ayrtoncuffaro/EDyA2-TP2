@@ -7,15 +7,19 @@ instance Seq [] where
     emptyS :: [a]
     emptyS = []
 
+
     singletonS :: a -> [a]
     singletonS x = [x]
+
 
     lengthS :: [a] -> Int
     lengthS = length
 
+
     nthS :: [a] -> Int -> a 
     nthS = (!!)
     
+
     tabulateS :: (Int -> a) -> Int -> [a]
     tabulateS f n = aux 0
         where
@@ -23,24 +27,30 @@ instance Seq [] where
                   | otherwise = let (x, xs) = f i ||| aux (i+1)
                                 in x:xs
 
+
     mapS :: (a -> b) -> [a] -> [b]
     mapS f [] = []
     mapS f (x:xs) = let (x', xs') = f x ||| mapS f xs
                     in x':xs'
+
 
     filterS :: (a -> Bool) -> [a] -> [a]
     filterS p [] = []
     filterS p (x:xs) = let (v, xs') = p x ||| filterS p xs
                        in if v then x:xs' else xs'
 
+
     appendS :: [a] -> [a] -> [a]
     appendS = (++)
+
 
     takeS :: [a] -> Int -> [a]
     takeS xs n = take n xs
 
+
     dropS :: [a] -> Int -> [a]
     dropS xs n = drop n xs
+
 
     showtS :: [a] -> TreeView a [a]
     showtS [] = EMPTY
@@ -55,8 +65,10 @@ instance Seq [] where
     showlS [] = NIL
     showlS (x:xs) = CONS x xs
 
+
     joinS :: [[a]] -> [a]
     joinS = concat
+
 
     reduceS :: (a -> a -> a) -> a -> [a] -> a
     reduceS f e xs = case showtS xs of
@@ -65,6 +77,7 @@ instance Seq [] where
         NODE l r -> let (l', r') = reduceS f e l ||| reduceS f e r
                     in f l' r'
     
+
     scanS :: (a -> a -> a) -> a -> [a] -> ([a], a)
     scanS f b [] = ([], b)
     scanS f b [x] = ([b], f b x)
@@ -83,6 +96,7 @@ instance Seq [] where
                         (cxs, total) = scanS f b (contraccion xs)
 
                     in (expansion xs cxs, total)
+    
     
     fromList :: [a] -> [a]
     fromList = id

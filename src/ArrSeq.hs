@@ -1,76 +1,111 @@
-module ListSeq where
+module ArrSeq where
 
 import Seq
 import qualified Arr as A
 import Par
 
-instance Seq Arr where
-    emptyS :: Arr a
+instance Seq A.Arr where
+    emptyS :: A.Arr a
     emptyS = A.empty
 
-    singletonS :: a -> Arr a
+
+    singletonS :: a -> A.Arr a
     singletonS x = A.fromList [x]
 
-    lengthS :: Arr a -> Int
+
+    lengthS :: A.Arr a -> Int
     lengthS = A.length
 
-    nthS :: Arr a -> Int -> a
+
+    nthS :: A.Arr a -> Int -> a
     nthS = (A.!)
 
-    tabulateS :: (Int -> a) -> Int -> Arr a
+
+    tabulateS :: (Int -> a) -> Int -> A.Arr a
     tabulateS = A.tabulate
 
-    mapS :: (a -> b) -> Arr a -> Arr b
+
+    mapS :: (a -> b) -> A.Arr a -> A.Arr b
     mapS f s = tabulateS (\i -> f (nthS s i)) (lengthS s)
 
-    appendS :: Arr a -> Arr a -> Arr a
+
+    appendS :: A.Arr a -> A.Arr a -> A.Arr a
     appendS s1 s2 = let n1 = lengthS s1
                         n2 = lengthS s2
-                    in tabulateS (\i -> if i < n 
-                                        then nthS s i 
-                                        else nthS t (i-n)) 
-                                        (n + m)
-
-    takeS :: Arr a -> Int -> Arr a
-    takeS s i = A.subArray 0 i
-    
-    dropS :: Arr a -> Int -> s a
-    dropS s i = A.subArray i (lengthS s - i)
-    
-    showtS :: Arr a -> TreeView a (Arr a)
-    showtS s | s == emptyS    = EMPTY
-             | lengthS s == 1 = ELT (nthS s 0)
-             | otherwise      = let n = lengthS s
-                                    m = div n 2
-                                in NODE (A.subArray 0 m) (A.subArray m (n - m))
-    
-    showlS :: Arr a -> ListView a (Arr a)
-    showlS s | s == emptyS = NIL
-             | otherwise   = CONS (nthS s 0) (A.subArray 1 (lengthS s - 1))
+                    in tabulateS (\i -> if i < n1 
+                                        then nthS s1 i 
+                                        else nthS s2 (i-n1)) 
+                                        (n1 + n2)
 
 
-    joinS :: Arr (Arr a) -> Arr a
+    takeS :: A.Arr a -> Int -> A.Arr a
+    takeS s i = A.subArray 0 i s
+    
+
+    dropS :: A.Arr a -> Int -> A.Arr a
+    dropS s i = A.subArray i (lengthS s - i) s
+    
+
+    showtS :: A.Arr a -> TreeView a (A.Arr a)
+    showtS s = case lengthS s of
+                    0 -> EMPTY
+                    1 -> ELT (nthS s 0)
+                    n -> let m = div n 2
+                         in NODE (A.subArray 0 m s) (A.subArray m (n - m) s)
+    
+
+    showlS :: A.Arr a -> ListView a (A.Arr a)
+    showlS s = case lengthS s of
+                    0 -> NIL
+                    n -> CONS (nthS s 0) (A.subArray 1 (n - 1) s)
+
+
+    joinS :: A.Arr (A.Arr a) -> A.Arr a
     joinS = A.flatten
 
-    filterS :: (a -> Bool) -> Arr a -> Arr a
-    filterS f s = joinS mapS (\x -> if f x then singletonS x else emptyS) s
 
-    reduceS :: (a -> a -> a) -> a -> Arr a -> a
+    filterS :: (a -> Bool) -> A.Arr a -> A.Arr a
+    filterS f s = joinS (mapS (\x -> if f x then singletonS x else emptyS) s)
+
+
+    reduceS :: (a -> a -> a) -> a -> A.Arr a -> a
     reduceS f b s = f b (red f b s)
         where
-            red f b s = let n = length s in
-                case n of
-                    0 -> b
-                    1 -> (s ! 0)
-                    otherwise -> 
-                        let m = div n 2
-                        (l, r) = (takeS s m, drop s m)
-                        (l1, r1) = red f b l ||| red f b r 
-                        in f l1 r1
+            red f b s =
+                case showtS s of
+                    EMPTY    -> b
+                    ELT x    -> x
+                    NODE l r -> let (l1, r1) = red f b l ||| red f b r 
+                                in f l1 r1
+
+
+    scanS :: (a -> a -> a) -> a -> A.Arr a -> (A.Arr a, a)
+    scanS f b s = 
+        case lengthS s of
+            0 -> (emptyS, b)
+            1 -> (singletonS b, f b (nthS s 0))
+            _ -> 
+                let n = lengthS s
+                    m = div n 2
                     
+                    contraccion s' = 
+                        let len = A.length s' 
+                            mid = div len 2
+                            s'' = A.tabulate (\i -> f (s' A.! (2*i)) (s' A.! (2*i+1))) mid
+                        in  if mod len 2 == 0 
+                            then s'' 
+                            else appendS s'' (singletonS (s' A.! (len-1)))
 
-    
+                    expansion s' ss' = 
+                        tabulateS (\i -> if mod i 2 == 0 
+                                         then ss' A.! (div i 2)
+                                         else f (ss' A.! (div i 2)) (s' A.! (i-1)))
+                                  (lengthS s')
+                    
+                    (cs, total) = scanS f b (contraccion s)
+            
+                in (expansion s cs, total)
 
-    scanS :: (a -> a -> a) -> a -> Arr a -> (Arr a, a)
-    
-    fromList   :: [a] -> Arr a
+
+    fromList :: [a] -> A.Arr a
+    fromList = A.fromList
