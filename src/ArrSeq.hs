@@ -23,8 +23,6 @@ instance Seq Arr where
     mapS :: (a -> b) -> Arr a -> Arr b
     mapS f s = tabulateS (\i -> f (nthS s i)) (lengthS s)
 
-    filterS :: (a -> Bool) -> Arr a -> Arr a
-
     appendS :: Arr a -> Arr a -> Arr a
     appendS s1 s2 = let n1 = lengthS s1
                         n2 = lengthS s2
@@ -54,8 +52,25 @@ instance Seq Arr where
     joinS :: Arr (Arr a) -> Arr a
     joinS = A.flatten
 
-    reduceS    :: (a -> a -> a) -> a -> Arr a -> a
+    filterS :: (a -> Bool) -> Arr a -> Arr a
+    filterS f s = joinS mapS (\x -> if f x then singletonS x else emptyS) s
+
+    reduceS :: (a -> a -> a) -> a -> Arr a -> a
+    reduceS f b s = f b (red f b s)
+        where
+            red f b s = let n = length s in
+                case n of
+                    0 -> b
+                    1 -> (s ! 0)
+                    otherwise -> 
+                        let m = div n 2
+                        (l, r) = (takeS s m, drop s m)
+                        (l1, r1) = red f b l ||| red f b r 
+                        in f l1 r1
+                    
+
     
-    scanS      :: (a -> a -> a) -> a -> Arr a -> (Arr a, a)
+
+    scanS :: (a -> a -> a) -> a -> Arr a -> (Arr a, a)
     
     fromList   :: [a] -> Arr a
